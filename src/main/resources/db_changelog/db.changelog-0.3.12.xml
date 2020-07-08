@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+
+    <changeSet id="Create sq_status table" author="e.danilovich">
+        <sql endDelimiter="#">
+
+            CREATE TABLE `sq_status` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `status` VARCHAR(45) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC),
+            UNIQUE INDEX `status_UNIQUE` (`status` ASC));
+
+            #
+
+            INSERT INTO sq_status (status)
+            VALUES ('Draft'), ("Approved");
+        </sql>
+        <rollback>
+            DROP TABLE `sq_status`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create sq_category table" author="e.danilovich">
+        <sql endDelimiter="#">
+
+            CREATE TABLE `sq_category` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `category` VARCHAR(45) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC),
+            UNIQUE INDEX `category_UNIQUE` (`category` ASC));
+
+            #
+
+            INSERT INTO sq_category (category)
+            VALUES ('Git');
+        </sql>
+        <rollback>
+            DROP TABLE `sq_category`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create survey_question table" author="e.danilovich">
+        <sql endDelimiter="#">
+            CREATE TABLE `survey_question` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `status_id` INT(11) NOT NULL,
+            `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `category_id` INT(11) NOT NULL,
+            `question` VARCHAR(200) NOT NULL,
+            `answer` VARCHAR(100) NOT NULL,
+            `creator_id` INT(11) NOT NULL,
+            `approver_id` INT(11) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC))
+            ENGINE = InnoDB;
+
+            #
+
+            ALTER TABLE `survey_question`
+            ADD INDEX `sqApprover_to_users_idx` (`approver_id` ASC),
+            ADD INDEX `sqCreator_to_users_idx` (`creator_id` ASC),
+            ADD INDEX `sq_to_status_idx` (`status_id` ASC),
+            ADD INDEX `sq_to_category_idx` (`category_id` ASC);
+
+            #
+
+            ALTER TABLE `survey_question`
+            ADD CONSTRAINT `sq_to_status`
+            FOREIGN KEY (`status_id`)
+            REFERENCES `union_reporting`.`sq_status` (`id`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+            ADD CONSTRAINT `sq_to_category`
+            FOREIGN KEY (`category_id`)
+            REFERENCES `union_reporting`.`sq_category` (`id`)
+            ON DELETE RESTRICT
+            ON UPDATE CASCADE,
+            ADD CONSTRAINT `sqCreator_to_users`
+            FOREIGN KEY (`creator_id`)
+            REFERENCES `union_reporting`.`users` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE CASCADE,
+            ADD CONSTRAINT `sqApprover_to_users`
+            FOREIGN KEY (`approver_id`)
+            REFERENCES `union_reporting`.`users` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE CASCADE;
+        </sql>
+        <rollback>
+            DROP TABLE `survey_question`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create INSERT_SURVEY_QUESTION" author="e.danilovich">
+        <sql endDelimiter="#">
+            DROP procedure IF EXISTS `INSERT_SURVEY_QUESTION`;
+
+            #
+
+            CREATE PROCEDURE `INSERT_SURVEY_QUESTION` (
+            IN request_id varchar(11),
+            IN request_status_id varchar(11),
+            IN request_category_id varchar(11),
+            IN request_question varchar(200),
+            IN request_answer varchar(100),
+            IN request_creator_id varchar(11),
+            IN request_approver_id varchar(11))
+            BEGIN
+            INSERT INTO survey_question (id, status_id, category_id, question, answer, creator_id, approver_id)
+            VALUES (IF(request_id ='',null,request_id), request_status_id, request_category_id, request_question, request_answer, request_creator_id, request_approver_id);
+
+            SET @created_id = IF(request_id = '', (SELECT LAST_INSERT_ID()), request_id);
+            SELECT * from suite_dashboard where id = @created_id;
+            END
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

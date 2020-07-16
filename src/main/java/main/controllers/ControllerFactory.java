@@ -4,9 +4,11 @@ import main.controllers.Administration.EmailSettingsController;
 import main.controllers.Administration.StepTypeController;
 import main.controllers.Administration.UserController;
 import main.controllers.Project.*;
+import main.controllers.survey_question.SurveyQuestionController;
 import main.model.dto.project.*;
 import main.model.dto.settings.EmailSettingsDto;
 import main.model.dto.settings.UserDto;
+import main.model.dto.survey_question.SurveyQuestionDto;
 
 public class ControllerFactory {
     private UserDto user;
@@ -74,6 +76,9 @@ public class ControllerFactory {
     }
     public PredefinedResolutionController getHandler(PredefinedResolutionDto entity) {
         return new PredefinedResolutionController(user);
+    }
+    public SurveyQuestionController getHandler(SurveyQuestionDto entity){
+        return new SurveyQuestionController(user);
     }
     public IssueController getHandler(IssueDto entity) {
         return new IssueController(user);
